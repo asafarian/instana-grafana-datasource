@@ -181,7 +181,7 @@ export class InstanaQueryCtrl extends QueryCtrl {
         }
       }
     );
-    this.datasource.application.getApplicastionTags().then(
+    this.datasource.application.getApplicationTags().then(
       applicationTags => {
         this.uniqueTags =
           _.sortBy(

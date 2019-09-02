@@ -66,7 +66,7 @@ export default class InstanaApplicationDataSource extends AbstractDatasource {
     return applications;
   }
 
-  getApplicastionTags() {
+  getApplicationTags() {
     let applicationTags = this.simpleCache.get('applicationTags');
     if (applicationTags) {
       return applicationTags;
