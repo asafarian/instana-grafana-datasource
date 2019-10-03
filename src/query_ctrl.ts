@@ -677,6 +677,16 @@ export class InstanaQueryCtrl extends QueryCtrl {
     }
     this.target.customFilters.push({value: ''});
     // this can not result in metric changes, we do not need to refresh
+
+    this.focusOnLatestFilter(this.target.refId, this.target.customFilters.length - 1);
+  }
+
+  focusOnLatestFilter(refId, index) {
+    let millisecondsToWait = 250;
+    setTimeout(function () {
+      let idOfLatestFilter = "in-metric-filter-" + refId + "-" + index;
+      document.getElementById(idOfLatestFilter).focus();
+    }, millisecondsToWait);
   }
 
   removeCustomFilter(index: number, refresh = true) {
