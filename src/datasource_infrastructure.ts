@@ -1,23 +1,19 @@
-import rollupDurationThresholds from './lists/rollups';
 import AbstractDatasource from './datasource_abstract';
 import TimeFilter from './types/time_filter';
 import Selectable from './types/selectable';
-import Rollup from './types/rollup';
 import Cache from './cache';
 
 import _ from 'lodash';
+import {getDefaultMetricRollupDuration} from "./util/rollup_granularity_util";
 
 export default class InstanaInfrastructureDataSource extends AbstractDatasource {
-  rollupDurationThresholds: Array<Rollup> = rollupDurationThresholds;
-
   snapshotCache: Cache<Promise<Array<Selectable>>>;
   snapshotInfoCache: Cache<Promise<Array<Selectable>>>;
   catalogCache: Cache<Promise<Array<Selectable>>>;
   lastFetchedFromAPI: boolean;
   showOffline: boolean;
 
-  maximumNumberOfUsefulDataPoints = 800;
-  timeToLiveSnapshotInfoCache = 60*60*1000;
+  timeToLiveSnapshotInfoCache = 60 * 60 * 1000;
 
   /** @ngInject */
   constructor(instanceSettings, backendSrv, templateSrv, $q) {
@@ -178,6 +174,11 @@ export default class InstanaInfrastructureDataSource extends AbstractDatasource 
   }
 
   fetchMetricsForSnapshots(target, snapshots, rollUp, timeFilter: TimeFilter, metric) {
+    if (!rollUp) {
+      target.timeInterval = getDefaultMetricRollupDuration(timeFilter);
+      rollUp = target.timeInterval;
+    }
+
     return this.$q.all(
       _.map(snapshots, (snapshot, index) => {
         // ...fetch the metric data for every snapshot in the results.
@@ -202,7 +203,7 @@ export default class InstanaInfrastructureDataSource extends AbstractDatasource 
   }
 
   correctMeanToSum(values, timeFilter: TimeFilter) {
-    const secondMultiplier = this.getDefaultMetricRollupDuration(timeFilter).rollup / 1000;
+    const secondMultiplier = getDefaultMetricRollupDuration(timeFilter).rollup / 1000;
     return _.map(values, value => {
       return {
         'value': value.value ? value.value * secondMultiplier : null,
@@ -220,44 +221,5 @@ export default class InstanaInfrastructureDataSource extends AbstractDatasource 
       + `&fillTimeSeries=true`
       + `&snapshotId=${snapshotId}`;
     return this.doRequest(url);
-  }
-
-  getDefaultMetricRollupDuration(timeFilter: TimeFilter, minRollup = 1000): Rollup {
-    // Ignoring time differences for now since small time differences
-    // can be accepted. This time is only used to calculate the rollup.
-    const now = this.currentTime();
-    const windowSize = this.getWindowSize(timeFilter);
-
-    let availableRollupDefinitions = this.rollupDurationThresholds.filter(
-      rollupDefinition => timeFilter.from >= now - rollupDefinition.availableFor
-    );
-    if (minRollup > 1000) {
-      availableRollupDefinitions = availableRollupDefinitions.filter(
-        rollupDefinition => rollupDefinition.rollup != null && rollupDefinition.rollup >= minRollup
-      );
-    }
-
-    for (let i = 0, len = availableRollupDefinitions.length; i < len; i++) {
-      // this works because the rollupDurationThresholds array is sorted by rollup
-      // the first rollup matching the requirements is returned
-      const rollupDefinition = availableRollupDefinitions[i];
-      const rollup = rollupDefinition && rollupDefinition.rollup ? rollupDefinition.rollup : 1000;
-      if (windowSize / rollup <= this.maximumNumberOfUsefulDataPoints) {
-        return rollupDefinition;
-      }
-    }
-
-    return this.rollupDurationThresholds[this.rollupDurationThresholds.length - 1];
-  }
-
-  getPossibleRollups(timeFilter: TimeFilter): Rollup[] {
-    // Ignoring time differences for now since small time differences
-    // can be accepted. This time is only used to calculate the rollup.
-    const now = this.currentTime();
-    const windowSize = this.getWindowSize(timeFilter);
-
-    return this.rollupDurationThresholds
-      .filter(rollupDefinition => timeFilter.from >= now - rollupDefinition.availableFor)
-      .filter(rollUp => windowSize / rollUp.rollup <= this.maximumNumberOfUsefulDataPoints);
   }
 }

@@ -12,6 +12,8 @@ import migrate from './migration';
 import _ from 'lodash';
 
 import './css/query_editor.css!';
+import {getPossibleGranularities} from "./util/analyze_util";
+import {getDefaultMetricRollupDuration, getPossibleRollups} from "./util/rollup_granularity_util";
 
 export class InstanaQueryCtrl extends QueryCtrl {
   static templateUrl = 'partials/query.editor.html';
@@ -86,6 +88,10 @@ export class InstanaQueryCtrl extends QueryCtrl {
 
     // infrastructure (built-in & custom)
     if (this.isInfrastructure()) {
+      this.target.availableTimeIntervals = getPossibleRollups(this.timeFilter);
+      if (!this.target.timeInterval) {
+        this.target.timeInterval = getDefaultMetricRollupDuration(this.timeFilter);
+      }
       if (this.target.entityQuery) {
         this.onFilterChange(false).then(() => {
           // infrastructure metrics support available metrics on a selected entity type
@@ -95,8 +101,6 @@ export class InstanaQueryCtrl extends QueryCtrl {
                 this.target.metric = _.find(this.availableMetrics, m => m.key === this.target.metric.key);
               }
             });
-
-            this.target.timeInterval = this.datasource.infrastructure.getDefaultMetricRollupDuration(this.timeFilter);
           }
         });
       }
@@ -104,6 +108,7 @@ export class InstanaQueryCtrl extends QueryCtrl {
 
     // analyze applications
     if (this.isAnalyzeApplication()) {
+      this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
       this.websiteApplicationLabel = "Application";
       this.onApplicationChanges(false, true).then(() => {
         if (this.target.metric) {
@@ -114,6 +119,7 @@ export class InstanaQueryCtrl extends QueryCtrl {
 
     // analyze websites
     if (this.isAnalyzeWebsite()) {
+      this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
       this.websiteApplicationLabel = "Website";
       this.onWebsiteChanges(false, true).then(() => {
         if (this.target.metric) {
@@ -124,6 +130,7 @@ export class InstanaQueryCtrl extends QueryCtrl {
 
     // applications metric
     if (this.isApplicationMetric()) {
+      this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
       this.websiteApplicationLabel = "Application";
       this.onApplicationChanges(false, false).then(() => {
         if (this.target.metric) {
@@ -134,6 +141,7 @@ export class InstanaQueryCtrl extends QueryCtrl {
 
     // service metric
     if (this.isServiceMetric()) {
+      this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
       this.serviceEndpointTitle = "Service";
       this.onServiceChanges(false).then(() => {
         if (this.target.metric) {
@@ -144,6 +152,7 @@ export class InstanaQueryCtrl extends QueryCtrl {
 
     // endpoint metric
     if (this.isEndpointMetric()) {
+      this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
       this.serviceEndpointTitle = "Endpoint";
       this.onEndpointChanges(false).then(() => {
         if (this.target.metric) {
@@ -340,21 +349,27 @@ export class InstanaQueryCtrl extends QueryCtrl {
       this.selectionReset();
       // fresh internal used lists without re-rendering
       if (this.isInfrastructure()) {
+        this.target.availableTimeIntervals = getPossibleRollups(this.timeFilter);
         this.onFilterChange(false);
       } else if (this.isAnalyzeApplication()) {
+        this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
         this.websiteApplicationLabel = "Application";
         this.onApplicationChanges(false, true);
       } else if (this.isAnalyzeWebsite()) {
+        this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
         this.websiteApplicationLabel = "Website";
         this.onWebsiteChanges(false, true);
       } else if (this.isApplicationMetric()) {
+        this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
         this.websiteApplicationLabel = "Application";
         this.onApplicationChanges(false, false);
       } else if (this.isServiceMetric()) {
+        this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
         this.serviceEndpointTitle = "Service";
         this.onFilterChange(false);
         this.onServiceChanges(false);
       } else if (this.isEndpointMetric()) {
+        this.target.availableTimeIntervals = getPossibleGranularities(this.timeFilter.windowSize);
         this.serviceEndpointTitle = "Endpoint";
         this.onFilterChange(false);
         this.onEndpointChanges(false);

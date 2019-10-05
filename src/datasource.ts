@@ -10,6 +10,7 @@ import migrate from './migration';
 import _ from 'lodash';
 import {getPossibleGranularities, readItemMetrics} from "./util/analyze_util";
 import {aggregate, buildAggregationLabel} from "./util/aggregation_util";
+import {getPossibleRollups} from "./util/rollup_granularity_util";
 
 
 export default class InstanaDatasource extends AbstractDatasource {
@@ -57,7 +58,6 @@ export default class InstanaDatasource extends AbstractDatasource {
         }
 
         if (target.metricCategory === this.ANALYZE_WEBSITE_METRICS) {
-          target.availableTimeIntervals = getPossibleGranularities(timeFilter.windowSize);
           return this.getAnalyzeWebsiteMetrics(target, timeFilter);
         } else if (target.metricCategory === this.ANALYZE_APPLICATION_METRICS) {
           target.availableTimeIntervals = getPossibleGranularities(timeFilter.windowSize);
@@ -72,10 +72,7 @@ export default class InstanaDatasource extends AbstractDatasource {
           target.availableTimeIntervals = getPossibleGranularities(timeFilter.windowSize);
           return this.getEndpointMetrics(target, timeFilter);
         } else {
-          target.availableTimeIntervals = this.infrastructure.getPossibleRollups(timeFilter);
-          if (!target.timeInterval) {
-            target.timeInterval = this.infrastructure.getDefaultMetricRollupDuration(timeFilter);
-          }
+          target.availableTimeIntervals = getPossibleRollups(timeFilter);
           return this.getInfrastructureMetrics(target, target.timeInterval, timeFilter);
         }
       })
